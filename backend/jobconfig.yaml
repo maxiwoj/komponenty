@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flask-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: flask
+    spec:
+      containers:
+      - name: flask
+        image: gregwator/komponenty
+        ports:
+        - containerPort: 5000
+      restartPolicy: Never
