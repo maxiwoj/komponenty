@@ -6,15 +6,12 @@ require(data.table)
 require(dplyr)
 require(deSolve)
 
-
-args <- commandArgs(TRUE)
-
 #PARAMETERS:
 #oral parameters:
 #oral bolus dose [mg]
-oral_dose <- as.integer(args[1])
-inf_dose <- as.integer(args[2])
-inf_time <- as.integer(args[3])
+oral_dose <- as.integer(Sys.getenv("ORAL_DOSE"))
+inf_dose <- as.integer(Sys.getenv("INF_DOSE"))
+inf_time <- as.integer(Sys.getenv("INF_TIME"))
 #define number of individuals:
 individual_count <- 1
 #define number of females:
@@ -23,12 +20,12 @@ female_count <- 0
 min_age <- 24  #minimal age
 max_age <- 24 #maximal age
 #time of the end of simulation [h]:
-t_end <- as.integer(args[4])
-seed <- as.integer(args[5])
+t_end <- as.integer(Sys.getenv("T_END"))
+seed <- as.integer(Sys.getenv("SEED"))
 
 set.seed(seed)
 
-
+sprintf("Oral dose: %i", oral_dose)
 
 
 #Weibull age distribution parameters:
