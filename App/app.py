@@ -3,13 +3,10 @@ from __future__ import print_function
 import random
 import string
 
-from flask import Flask, request, abort, jsonify
-from kubernetes import client, config
-from wtforms import Form, DecimalField
-import time
 import kubernetes.client
+from flask import Flask, request, abort
+from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-from pprint import pprint
 
 # Configure API key authorization: BearerToken
 config.load_kube_config()
@@ -23,6 +20,28 @@ api_instance = kubernetes.client.BatchV1Api(
     kubernetes.client.ApiClient(configuration))
 app = Flask(__name__)
 
+job_ids = []
+
+
+class InputParameters:
+    def __init__(self, json_params):
+        self.oral_dose = json_params['oral_dose']
+        self.inf_dose = json_params['inf_dose']
+        self.inf_time = json_params['inf_time']
+        self.t_end = json_params['t_end']
+        self.seed = json_params['seed']
+
+
+def parse_input_parameters(job_params):
+    return InputParameters(job_params)
+
+
+def params_to_dics(params):
+    env_params = {'ORAL_DOSE': str(params.oral_dose), 'INF_DOSE': str(params.inf_dose),
+                  'INF_TIME': str(params.inf_time),
+                  'T_END': str(params.t_end), 'SEED': str(params.seed)}
+    return env_params
+
 
 @app.route("/")
 def main():
@@ -31,48 +50,41 @@ def main():
 
 @app.route("/jobs", methods=['POST'])
 def runScript():
+    global job_ids
+    current_request_job_ids = []
     job_params = []
-    # for inputParameters in request.form['jobsParams']:
-    #     form = InputParameters(inputParameters)
-    #     if form.validate():
-    #         job_params.append(form)
-    #     else:
-    #         return abort(400)
-    # TODO: Request a script run through Kubernetes API
+    for params in request.get_json(force=True)['jobs']:
+        job_params.append(parse_input_parameters(params))
     container_image = "gregwator/komponenty"
-    name = id_generator()
-    body = kube_create_job_object(name, container_image, env_vars={"VAR": "TESTING"})
-    try:
-        api_response = api_instance.create_namespaced_job("default", body, pretty=True)
-        print(api_response)
-    except ApiException as e:
-        print("Exception when calling BatchV1Api->create_namespaced_job: %s\n" % e)
-    return "OK"
+
+    for params in job_params:
+        name = id_generator()
+        job_ids.append(name)
+        current_request_job_ids.append(name)
+        print(job_ids)
+        body = kube_create_job_object(name, container_image, env_vars=params_to_dics(params))
+        try:
+            api_instance.create_namespaced_job("default", body, pretty=True)
+        except ApiException as e:
+            print("Exception when calling BatchV1Api->create_namespaced_job: %s\n" % e)
+            return abort(500,
+                         "Exception when creating job: %s\n" % e)
+    return str({"jobId": current_request_job_ids})
 
 
 @app.route("/job/<jobId>", methods=['DELETE'])
 def deleteJob(jobId):
-    name = 'name_example'  # str | name of the Job
-    namespace = 'namespace_example'  # str | object name and auth scope, such as for teams and projects
-    pretty = 'pretty_example'  # str | If 'true', then the output is pretty printed. (optional)
-    body = kubernetes.client.V1DeleteOptions()  # V1DeleteOptions |  (optional)
-    dry_run = 'dry_run_example'  # str | When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed (optional)
-    grace_period_seconds = 56  # int | The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. (optional)
-    orphan_dependents = True  # bool | Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. (optional)
-    propagation_policy = 'propagation_policy_example'  # str | Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. (optional)
-
+    global job_ids
+    name = jobId  # str | name of the Job
+    namespace = 'default'  # str | object name and auth scope, such as for teams and projects
     try:
-        api_response = api_instance.delete_namespaced_job(name, namespace,
-                                                          pretty=pretty,
-                                                          body=body,
-                                                          dry_run=dry_run,
-                                                          grace_period_seconds=grace_period_seconds,
-                                                          orphan_dependents=orphan_dependents,
-                                                          propagation_policy=propagation_policy)
-        return api_response
-    except ApiException as e:
+        api_instance.delete_namespaced_job(name, namespace, pretty=True)
+        job_ids.remove(jobId)
+    except Exception as e:
         return abort(500,
                      "Exception when calling BatchV1Api->delete_namespaced_job: %s\n" % e)
+
+    return "Delete OK"
 
 
 @app.route("/jobs", methods=["GET"])
@@ -102,13 +114,30 @@ def getJobs():
             "Exception when calling BatchV1Api->list_namespaced_job: %s\n" % e))
 
 
-@app.route("/jobs/status", methods=["GET"])
-def getJobsStatus():
-    return "Not ready yet"
+def fetch_status(status):
+    if status._status.active is not None:
+        return "Running"
+    if status._status.succeeded is not None:
+        return "Succeeded"
+    return "Failed"
 
 
-@app.route("/jobs/results", methods=["GET"])
-def getJobsResults():
+@app.route("/jobs/<jobId>/status", methods=["GET"])
+def getJobsStatus(jobId):
+    name = jobId  # str | name of the Job
+    namespace = 'default'  # str | object name and auth scope, such as for teams and projects
+    try:
+        status = api_instance.read_namespaced_job_status(name, namespace, pretty=True)
+        print(status)
+    except Exception as e:
+        return abort(500,
+                     "Exception when calling BatchV1Api->delete_namespaced_job: %s\n" % e)
+
+    return fetch_status(status)
+
+
+@app.route("/jobs/<jobId>/results", methods=["GET"])
+def getJobsResults(jobId):
     # TODO: Get the results and return them to the user
     return "OK"
 
@@ -181,25 +210,3 @@ def id_generator(size=12, chars=string.ascii_lowercase + string.digits):
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=5000)
-
-class InputParameters(Form):
-    # TODO: Which parametes are required, what are the constraints?
-    # oral parameters:
-    # oral bolus dose [mg]
-    oral_dose = DecimalField('oral_dose', default=880)
-    inf_dose = DecimalField('inf_dose', default=0)
-    inf_time = DecimalField('inf_time', default=2)
-    #
-    # # define number of individuals:
-    # individual_count = DecimalField('individual_count', default=1)
-    # # define number of females:
-    # female_count = DecimalField('female_count', default=0)
-    #
-    # # define age range [years]:
-    # min_age = DecimalField('min_age', default=24)
-    # max_age = DecimalField('max_age', default=24)
-
-    # #time of the end of simulation [h]:
-    t_end = DecimalField('t_end', default=15)
-
-    seed = DecimalField('seed', default=1111)
