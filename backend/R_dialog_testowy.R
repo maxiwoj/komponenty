@@ -6,12 +6,15 @@ require(data.table)
 require(dplyr)
 require(deSolve)
 
+
+args <- commandArgs(TRUE)
+
 #PARAMETERS:
 #oral parameters:
 #oral bolus dose [mg]
-oral_dose <- 880 #1000
-inf_dose <- 0
-inf_time <- 2
+oral_dose <- as.integer(args[1])
+inf_dose <- as.integer(args[2])
+inf_time <- as.integer(args[3])
 #define number of individuals:
 individual_count <- 1
 #define number of females:
@@ -20,10 +23,10 @@ female_count <- 0
 min_age <- 24  #minimal age
 max_age <- 24 #maximal age
 #time of the end of simulation [h]:
-t_end <- 15
+t_end <- as.integer(args[4])
+seed <- as.integer(args[5])
 
-
-set.seed(1111)
+set.seed(seed)
 
 
 
