@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 
 import random
@@ -10,7 +11,7 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 # Configure API key authorization: BearerToken
-config.load_kube_config()
+config.load_kube_config(config_file='/app/config')
 configuration = kubernetes.client.Configuration()
 # configuration.api_key['authorization'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -218,4 +219,4 @@ def convert_to_json(obj):
 
 
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=5000)
+    app.run(host='0.0.0.0', port=5000)

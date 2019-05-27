@@ -2,7 +2,19 @@
 all: setup run
 
 setup:
-	FLASK_APP=app.py
-	FLASK_ENV=development
+	echo "WARNING: This is for Minicube, development only"
+	cp ~/.kube/config ./config
+	echo "Remember to properly setup config file"
+	echo "Minicube on mac:"
+	echo "change server address to: \'docker.for.mac.localhost:6443\'"
+
+create-image:
+	docker build -t komponenty-rest:latest .
+
+push: create-image
+	docker tag komponenty-rest:latest maxwojczuk/komponenty-rest:latest
+	docker push maxwojczuk/komponenty-rest:latest
+
 run: 
-	flask run
+	docker run -p 5000:5000 komponenty-rest:latest
+
