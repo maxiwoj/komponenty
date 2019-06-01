@@ -15,5 +15,3 @@ spec:
       containers:
       - name: flask
         image: maxwojczuk/komponenty-rest:latest
-        ports:
-        - containerPort: 5000

@@ -18,3 +18,11 @@ push: create-image
 run: 
 	docker run -p 5000:5000 komponenty-rest:latest
 
+run-kubernetes:
+	kubectl create -f ../backend/deployment.yaml
+	kubectl expose deployment/flask-deployment --type="NodePort" --port 5000
+
+clean-kubernetes:
+	kubectl delete -f ../backend/deployment.yaml
+
+
