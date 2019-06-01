@@ -133,8 +133,11 @@ def getJobsStatus(jobId):
 def getJobsResults(jobId):
     namespace='default'
     pods = api_pods.list_namespaced_pod(namespace, include_uninitialized=False, pretty=True, timeout_seconds=60).items
-    pod_name = list(filter(lambda pod: pod.metadata.labels['job-name'], pods))[0].metadata.name
-    logs = api_pods.read_namespaced_pod_log(pod_name, namespace)
+    print(pods)
+    pod_name = next(iter(filter(lambda pod: jobId in pod.metadata.name, pods)), None)
+    if pod_name is None:
+        return abort(404, "No such job with id: " + jobId)
+    logs = api_pods.read_namespaced_pod_log(pod_name.metadata.name, namespace)
     return logs
 
 
