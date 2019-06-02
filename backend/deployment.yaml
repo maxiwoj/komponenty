@@ -4,9 +4,9 @@ metadata:
   name: flask-deployment
 spec:
   volumes:
-    -name: host-volume
-      persistentVolumeClaim:
-        claimName: pvc-hostpath
+  - name: host-volume
+    persistentVolumeClaim:
+      claimName: pvc-hostpath
   replicas: 1
   selector:
     matchLabels:
