@@ -182,6 +182,7 @@ def kube_create_job_object(name, container_image, namespace="default",
     # Attention: Each JOB must have a different name!
     body.metadata = client.V1ObjectMeta(namespace=namespace, name=name)
     # And a Status
+
     body.status = client.V1JobStatus()
     # Now we start with the Template...
     template = client.V1PodTemplate()
@@ -190,10 +191,14 @@ def kube_create_job_object(name, container_image, namespace="default",
     env_list = []
     for env_name, env_value in env_vars.items():
         env_list.append(client.V1EnvVar(name=env_name, value=env_value))
+    volume_mounts = client.V1VolumeMount(mount_path= "/mydata", name="host-volume")
     container = client.V1Container(name=container_name, image=container_image,
-                                   env=env_list)
+                                   env=env_list, volume_mounts=volume_mounts)
+    per_vol_claim = client.V1PersistentVolumeClaimVolumeSource(claim_name="pvc-hostpath")
+    volume = client.V1Volume(name="host-volume", persistent_volume_claim=per_vol_claim)
     template.template.spec = client.V1PodSpec(containers=[container],
-                                              restart_policy='Never')
+                                              restart_policy='Never',
+                                              volumes=volume)
     # And finaly we can create our V1JobSpec!
     body.spec = client.V1JobSpec(ttl_seconds_after_finished=600,
                                  template=template.template)
