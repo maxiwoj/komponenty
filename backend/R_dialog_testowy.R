@@ -1097,6 +1097,6 @@ for (i in pop3$rn) {
 
 results_list = lapply(ls(pattern = "outputCurry[0-9]"), get)#, envir = .GlobalEnv), get)
 
-write.table(results_list, file = paste("/mydata/", job_name, ".txt"))
+write.table(results_list, file = paste("/mydata/", job_name, ".txt", sep=""))
 newDF <- bind_rows(results_list, .id = "id")
 

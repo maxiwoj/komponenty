@@ -3,10 +3,6 @@ kind: Deployment
 metadata:
   name: flask-deployment
 spec:
-  volumes:
-  - name: host-volume
-    persistentVolumeClaim:
-      claimName: pvc-hostpath
   replicas: 1
   selector:
     matchLabels:
@@ -19,6 +15,10 @@ spec:
       containers:
       - name: flask
         image: gregwator/komponenty-rest:latest
-      volumeMounts:
+        volumeMounts:
         - name: host-volume
           mountPath: /mydata
+      volumes:
+      - name: host-volume
+        persistentVolumeClaim:
+          claimName: pvc-hostpath
