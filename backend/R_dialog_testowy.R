@@ -22,6 +22,7 @@ max_age <- 24 #maximal age
 #time of the end of simulation [h]:
 t_end <- as.integer(Sys.getenv("T_END"))
 seed <- as.integer(Sys.getenv("SEED"))
+job_name <- Sys.getenv("JOB_NAME")
 
 set.seed(seed)
 
@@ -1096,5 +1097,6 @@ for (i in pop3$rn) {
 
 results_list = lapply(ls(pattern = "outputCurry[0-9]"), get)#, envir = .GlobalEnv), get)
 
+write.table(results_list, file = paste("/mydata/", job_name, ".txt"))
 newDF <- bind_rows(results_list, .id = "id")
 

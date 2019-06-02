@@ -34,6 +34,10 @@ class InputParameters:
         self.inf_time = json_params['inf_time']
         self.t_end = json_params['t_end']
         self.seed = json_params['seed']
+        self.job_name = ''
+
+    def set_job_name(self, name):
+        self.job_name = name
 
 
 def parse_input_parameters(job_params):
@@ -45,7 +49,8 @@ def params_to_dics(params):
                   'INF_DOSE': str(params.inf_dose),
                   'INF_TIME': str(params.inf_time),
                   'T_END': str(params.t_end),
-                  'SEED': str(params.seed)}
+                  'SEED': str(params.seed),
+                  'JOB_NAME': str(params.job_name)}
     return env_params
 
 
@@ -67,6 +72,7 @@ def runScript():
         name = id_generator()
         job_ids.append(name)
         current_request_job_ids.append(name)
+        params.set_job_name(name)
         print(job_ids)
         body = kube_create_job_object(name, container_image,
                                       env_vars=params_to_dics(params))
@@ -131,7 +137,7 @@ def getJobsStatus(jobId):
 
 @app.route("/jobs/<jobId>/results", methods=["GET"])
 def getJobsResults(jobId):
-    namespace='default'
+    namespace = 'default'
     pods = api_pods.list_namespaced_pod(namespace, include_uninitialized=False, pretty=True, timeout_seconds=60).items
     print(pods)
     pod_name = next(iter(filter(lambda pod: jobId in pod.metadata.name, pods)), None)
