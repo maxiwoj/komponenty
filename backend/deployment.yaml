@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: flask
-        image: gregwator/komponenty-rest:latest
+        image: maxwojczuk/komponenty-rest:latest
         volumeMounts:
         - name: host-volume
           mountPath: /mydata
