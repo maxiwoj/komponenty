@@ -2,10 +2,10 @@
 all: setup run
 
 setup:
-	echo "WARNING: This is for Minicube, development only"
+	echo "WARNING: This is for docker-for-desktop kubernetes engine, development only"
 	cp ~/.kube/config ./config
 	echo "Remember to properly setup config file"
-	echo "Minicube on mac:"
+	echo "kubernetes engine docker-for-desktop on mac:"
 	echo "change server address to: \'docker.for.mac.localhost:6443\'"
 
 create-image:
@@ -28,6 +28,7 @@ clean-kubernetes:
 	kubectl delete -f ../backend/persistent_vol.yaml
 	kubectl delete -f ../backend/porsistent_vol_claim.yaml
 	kubectl delete -f ../backend/deployment.yaml
+	kubectl delete service/flask-deployment
 
 delete-jobs:
 	kubectl delete jobs --all
